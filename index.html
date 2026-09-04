@@ -257,7 +257,7 @@
 <div class="container">
 
   <div class="price-card">
-    <label>መዓልታዊ ዕዳጋ — 90% (Daily Price, 90% sheet)</label>
+    <label>መዓልታዊ ዕዳጋ — 90% (Daily Price, 90%)</label>
     <div class="price-input-row">
       <input type="number" id="dailyPrice90" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
       <span class="unit">ብር/ግራም</span>
@@ -265,7 +265,7 @@
   </div>
 
   <div class="price-card">
-    <label>መዓልታዊ ዕዳጋ — 10% (Daily Price, 10% sheet)</label>
+    <label>መዓልታዊ ዕዳጋ — 10% (Daily Price, 10%)</label>
     <div class="price-input-row">
       <input type="number" id="dailyPrice10" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
       <span class="unit">ብር/ግራም</span>
@@ -275,7 +275,7 @@
   <div class="price-card">
     <label>ኮምሽን መእተዊ ብግራም (Entry Commission per gram — 90% ጥራይ)</label>
     <div class="price-input-row">
-      <input type="number" id="entryCommissionRate" inputmode="decimal" step="any" placeholder="0.00" value="30" oninput="updateResults()">
+      <input type="number" id="entryCommissionRate" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
       <span class="unit">ብር/ግራም</span>
     </div>
   </div>
@@ -298,7 +298,8 @@
 
   <p class="info-note">
     90%: ዋጋ = ክብደት × (ካራት/24) × ዕዳጋ90% × 90% ፣ ኮምሽን መእተዊ (ብተጠቃሚ ዝኣተወ ዋጋ × ክብደት) ካብ 90% ጥራይ ይቕነስ<br>
-    10%: 100% ዋጋ (ብዕዳጋ10%) ተሰሊዑ፣ ናይ 90% ዋጋ (ብዕዳጋ90%) ተቐኒሱ ተረፍ ትወጽእ — ኮምሽን መእተዊ ኣይትቕነስን
+    10%: 100% ዋጋ (ብዕዳጋ10%) ተሰሊዑ፣ ናይ 90% ዋጋ (ብዕዳጋ90%) ተቐኒሱ ተረፍ ትወጽእ — ኮምሽን መእተዊ ኣይትቕነስን<br>
+    ናይ ባንኪ ኮምሽን 0.1% ኣብ ክልቲኡ (90%ን 10%ን) ይሕሰብ
   </p>
 
 </div>
@@ -332,7 +333,7 @@ function clearAll(){
   rows = [{weight:'', karat:''}];
   document.getElementById('dailyPrice90').value = '';
   document.getElementById('dailyPrice10').value = '';
-  document.getElementById('entryCommissionRate').value = '30';
+  document.getElementById('entryCommissionRate').value = '';
   renderRows();
 }
 
@@ -341,6 +342,10 @@ function fmt(n){
   return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// 90% sheet: value90 = weight * (karat/24) * price90 * 90%
+// entry commission = user-entered rate * weight (applies ONLY here, never on the 10% sheet)
+// bank commission = 0.1% of value90 (fixed, matches original workbook)
+// VAT: removed per request — no longer subtracted anywhere
 function compute90(weight, karat, price, commissionRate){
   const w = parseFloat(weight)||0;
   const k = parseFloat(karat)||0;
@@ -348,26 +353,31 @@ function compute90(weight, karat, price, commissionRate){
   const cr = parseFloat(commissionRate)||0;
   const value90 = w * (k/24) * p * 0.90;      // E = B*(C/24)*D*90%
   const entryCommission = cr * w;             // F = (user rate) * B
-  const bankCommission = value90 * 0.001;     // G = E*0.1%
-  const vat = bankCommission * 0.15;          // H = G*15%
-  const net = value90 - entryCommission - bankCommission - vat; // I
-  return {value90, entryCommission, bankCommission, vat, net};
+  const bankCommission = value90 * 0.001;     // G = E*0.1% (fixed)
+  const net = value90 - entryCommission - bankCommission; // I (no VAT)
+  return {value90, entryCommission, bankCommission, net};
 }
 
-// commissionRate applies ONLY to the 90% sheet, never to 10% — matches the
-// original workbook, where the 10% sheet's formulas never reference a commission input.
+// 10% sheet: uses its OWN daily price (price10), while pulling the 90% value
+// using the 90% sheet's own price (price90) — these two prices can differ.
+// No entry commission here, ever — matches the original workbook.
 function compute10(weight, karat, price10, price90){
+  // If the 10% sheet's own daily price hasn't been entered yet, don't compute
+  // anything from the (still-zero) price — that would wrongly subtract the
+  // 90% value and show a negative number. Show all zeros instead until filled.
+  if(price10 === '' || price10 === null || price10 === undefined){
+    return {value100:0, remainder:0, bankCommission:0, net:0};
+  }
   const w = parseFloat(weight)||0;
   const k = parseFloat(karat)||0;
   const p10 = parseFloat(price10)||0;
   const p90 = parseFloat(price90)||0;
-  const value100 = (k/24) * w * p10;          // E = (C/24)*B*D10   (uses the 10% sheet's own price)
-  const value90 = w * (k/24) * p90 * 0.90;    // F = 90%!E          (uses the 90% sheet's own price)
+  const value100 = (k/24) * w * p10;          // E = (C/24)*B*D10
+  const value90 = w * (k/24) * p90 * 0.90;    // F = 90%!E
   const remainder = value100 - value90;       // E - F  (the 10% slice)
-  const bankCommission = remainder * 0.001;   // G = (E-F)*0.1%
-  const vat = bankCommission * 0.15;          // H = G*15%
-  const net = remainder - bankCommission - vat; // I  — no entry commission here
-  return {value100, remainder, bankCommission, vat, net};
+  const bankCommission = remainder * 0.001;   // G = (E-F)*0.1% (fixed)
+  const net = remainder - bankCommission;     // I (no VAT, no entry commission)
+  return {value100, remainder, bankCommission, net};
 }
 
 // Builds the row cards (inputs + empty result slots). Only called when rows
@@ -416,7 +426,7 @@ function updateResults(){
   const price10 = document.getElementById('dailyPrice10').value;
   const commissionRate = document.getElementById('entryCommissionRate').value;
 
-  let totals = {main:0, sub:0, bankCommission:0, vat:0, net:0};
+  let totals = {main:0, sub:0, bankCommission:0, net:0};
 
   rows.forEach((r, i)=>{
     const resultsEl = document.getElementById(`results-${i}`);
@@ -427,13 +437,11 @@ function updateResults(){
       totals.main += c.value90;
       totals.sub += c.entryCommission;
       totals.bankCommission += c.bankCommission;
-      totals.vat += c.vat;
       totals.net += c.net;
       resultsEl.innerHTML = `
         <div class="result-item"><span>90% ዋጋ</span><span>${fmt(c.value90)}</span></div>
         <div class="result-item"><span>ኮምሽን መእተዊ</span><span>${fmt(c.entryCommission)}</span></div>
         <div class="result-item"><span>0.1% ባንኪ ኮምሽን</span><span>${fmt(c.bankCommission)}</span></div>
-        <div class="result-item"><span>VAT 15%</span><span>${fmt(c.vat)}</span></div>
         <div class="final-value"><span>ዝተፃረየ ዋጋ</span><span>${fmt(c.net)}</span></div>
       `;
     } else {
@@ -441,13 +449,11 @@ function updateResults(){
       totals.main += c.value100;
       totals.sub += c.remainder;
       totals.bankCommission += c.bankCommission;
-      totals.vat += c.vat;
       totals.net += c.net;
       resultsEl.innerHTML = `
         <div class="result-item"><span>100% ዋጋ</span><span>${fmt(c.value100)}</span></div>
         <div class="result-item"><span>10% ተረፍ</span><span>${fmt(c.remainder)}</span></div>
         <div class="result-item"><span>0.1% ባንኪ ኮምሽን</span><span>${fmt(c.bankCommission)}</span></div>
-        <div class="result-item"><span>VAT 15%</span><span>${fmt(c.vat)}</span></div>
         <div class="final-value"><span>ዝተፃረየ ዋጋ</span><span>${fmt(c.net)}</span></div>
       `;
     }
@@ -455,19 +461,21 @@ function updateResults(){
 
   // Grand total: combine 90% net + 10% net for every row, regardless of active tab.
   // Entry commission is only ever charged once (inside the 90% calc), so no double-subtraction.
-  let grand90 = 0, grand10 = 0, grandEntryCommission = 0;
+  let grand90 = 0, grand10 = 0, grandEntryCommission = 0, grandBankCommission = 0;
   rows.forEach(r=>{
     const c90 = compute90(r.weight, r.karat, price90, commissionRate);
     const c10 = compute10(r.weight, r.karat, price10, price90);
     grand90 += c90.net;
     grand10 += c10.net;
     grandEntryCommission += c90.entryCommission;
+    grandBankCommission += c90.bankCommission + c10.bankCommission;
   });
   const grandNet = grand90 + grand10;
   document.getElementById('grandTotalsBody').innerHTML = `
     <div class="total-row"><span>ዝተፃረየ ዋጋ (90%)</span><span>${fmt(grand90)}</span></div>
     <div class="total-row"><span>ዝተፃረየ ዋጋ (10%)</span><span>${fmt(grand10)}</span></div>
     <div class="total-row"><span>ጠቕላላ ኮምሽን መእተዊ ዝተቐነሰ</span><span>${fmt(grandEntryCommission)}</span></div>
+    <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1% ዝተቐነሰ</span><span>${fmt(grandBankCommission)}</span></div>
     <div class="total-row grand"><span>ጠቕላላ ናይ ክፍሊት ዋጋ</span><span>${fmt(grandNet)}</span></div>
   `;
 
@@ -477,16 +485,14 @@ function updateResults(){
     tb.innerHTML = `
       <div class="total-row"><span>ጠቕላላ 90% ዋጋ</span><span>${fmt(totals.main)}</span></div>
       <div class="total-row"><span>ጠቕላላ ኮምሽን መእተዊ</span><span>${fmt(totals.sub)}</span></div>
-      <div class="total-row"><span>ጠቕላላ ባንኪ ኮምሽን</span><span>${fmt(totals.bankCommission)}</span></div>
-      <div class="total-row"><span>ጠቕላላ VAT</span><span>${fmt(totals.vat)}</span></div>
+      <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1%</span><span>${fmt(totals.bankCommission)}</span></div>
       <div class="total-row grand"><span>ጠቕላላ ዝተፃረየ ዋጋ</span><span>${fmt(totals.net)}</span></div>
     `;
   } else {
     tb.innerHTML = `
       <div class="total-row"><span>ጠቕላላ 100% ዋጋ</span><span>${fmt(totals.main)}</span></div>
       <div class="total-row"><span>ጠቕላላ 10% ተረፍ</span><span>${fmt(totals.sub)}</span></div>
-      <div class="total-row"><span>ጠቕላላ ባንኪ ኮምሽን</span><span>${fmt(totals.bankCommission)}</span></div>
-      <div class="total-row"><span>ጠቕላላ VAT</span><span>${fmt(totals.vat)}</span></div>
+      <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1%</span><span>${fmt(totals.bankCommission)}</span></div>
       <div class="total-row grand"><span>ጠቕላላ ዝተፃረየ ዋጋ</span><span>${fmt(totals.net)}</span></div>
     `;
   }
