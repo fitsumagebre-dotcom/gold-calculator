@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ti">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ናይ ባንኪ ዕዳጋ ወርቂ ሒሳብ መስርሒ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8a6d1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ወርቂ መስርሒ">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root{
+    --gold:#c9a227;
+    --gold-dark:#8a6d1f;
+    --bg:#0f1115;
+    --card:#181b21;
+    --card2:#20242c;
+    --text:#f2ede1;
+    --muted:#9a9488;
+    --accent90:#c9a227;
+    --accent10:#5aa3c9;
+    --danger:#e0605a;
+    --good:#5ac98b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Ethiopic",Arial,sans-serif;
+    background:linear-gradient(160deg,#0f1115,#181512 60%,#0f1115);
+    color:var(--text);
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  header{
+    padding:22px 18px 16px;
+    text-align:center;
+    position:sticky;
+    top:0;
+    background:rgba(15,17,21,0.92);
+    backdrop-filter:blur(8px);
+    z-index:20;
+    border-bottom:1px solid #2a2d33;
+  }
+  header h1{
+    font-size:1.15rem;
+    margin:0 0 4px;
+    color:var(--gold);
+    letter-spacing:0.3px;
+  }
+  header p{margin:0;font-size:0.78rem;color:var(--muted);}
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    padding:14px 16px 0;
+    max-width:720px;
+    margin:0 auto;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:11px 0;
+    border-radius:12px;
+    background:var(--card);
+    color:var(--muted);
+    font-weight:600;
+    font-size:0.95rem;
+    border:1px solid #2a2d33;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .tab.active{
+    background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+    color:#191308;
+    border-color:transparent;
+  }
+
+  .container{max-width:720px;margin:0 auto;padding:16px;}
+
+  .price-card{
+    background:var(--card);
+    border:1px solid #2a2d33;
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .price-card label{
+    display:block;
+    font-size:0.82rem;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .price-input-row{display:flex;align-items:center;gap:10px;}
+  .price-input-row input{
+    flex:1;
+    background:var(--card2);
+    border:1px solid #33373f;
+    color:var(--text);
+    font-size:1.1rem;
+    font-weight:600;
+    padding:12px 14px;
+    border-radius:10px;
+    outline:none;
+  }
+  .price-input-row input:focus{border-color:var(--gold);}
+  .unit{font-size:0.75rem;color:var(--muted);}
+
+  .row-card{
+    background:var(--card);
+    border:1px solid #2a2d33;
+    border-radius:var(--radius);
+    padding:14px;
+    margin-bottom:12px;
+    position:relative;
+  }
+  .row-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .row-index{
+    font-size:0.8rem;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .row-remove{
+    background:none;
+    border:none;
+    color:var(--danger);
+    font-size:1.2rem;
+    line-height:1;
+    padding:4px 8px;
+    cursor:pointer;
+  }
+  .inputs-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .field label{
+    display:block;
+    font-size:0.72rem;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:var(--card2);
+    border:1px solid #33373f;
+    color:var(--text);
+    font-size:1rem;
+    padding:10px 12px;
+    border-radius:9px;
+    outline:none;
+  }
+  .field input:focus, .field select:focus{border-color:var(--gold);}
+
+  .results{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 14px;
+    padding-top:10px;
+    border-top:1px dashed #2a2d33;
+  }
+  .result-item{display:flex;justify-content:space-between;font-size:0.82rem;}
+  .result-item span:first-child{color:var(--muted);}
+  .result-item span:last-child{font-weight:600;}
+  .final-value{
+    grid-column:1 / -1;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--card2);
+    padding:9px 12px;
+    border-radius:9px;
+    margin-top:4px;
+  }
+  .final-value span:first-child{color:var(--gold);font-size:0.85rem;font-weight:600;}
+  .final-value span:last-child{color:var(--good);font-size:1.05rem;font-weight:700;}
+
+  .add-row-btn{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:1.5px dashed #444a54;
+    background:transparent;
+    color:var(--muted);
+    font-size:0.95rem;
+    font-weight:600;
+    cursor:pointer;
+    margin-bottom:18px;
+  }
+  .add-row-btn:active{background:#1c1f26;}
+
+  .total-card{
+    background:linear-gradient(135deg,#1e1a10,#181b21);
+    border:1px solid var(--gold-dark);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .total-card h3{
+    margin:0 0 12px;
+    font-size:0.95rem;
+    color:var(--gold);
+  }
+  .total-row{
+    display:flex;
+    justify-content:space-between;
+    padding:6px 0;
+    font-size:0.88rem;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .total-row:last-child{border-bottom:none;}
+  .total-row span:first-child{color:var(--muted);}
+  .total-row span:last-child{font-weight:700;}
+  .total-row.grand span:last-child{color:var(--good);font-size:1.15rem;}
+
+  .clear-btn{
+    width:100%;
+    padding:12px;
+    text-align:center;
+    color:var(--danger);
+    background:none;
+    border:1px solid #3a2a28;
+    border-radius:10px;
+    font-size:0.85rem;
+    cursor:pointer;
+  }
+
+  .info-note{
+    font-size:0.72rem;
+    color:var(--muted);
+    text-align:center;
+    padding:14px 20px 0;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ናይ ባንኪ ዕዳጋ ወርቂ ሒሳብ መስርሒ</h1>
+  <p>Bank Gold Rate Calculator</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="90" onclick="switchTab('90')">90%</div>
+  <div class="tab" data-tab="10" onclick="switchTab('10')">10%</div>
+</div>
+
+<div class="container">
+
+  <div class="price-card">
+    <label>መዓልታዊ ዕዳጋ — 90% (Daily Price, 90%)</label>
+    <div class="price-input-row">
+      <input type="number" id="dailyPrice90" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
+      <span class="unit">ብር/ግራም</span>
+    </div>
+  </div>
+
+  <div class="price-card">
+    <label>መዓልታዊ ዕዳጋ — 10% (Daily Price, 10%)</label>
+    <div class="price-input-row">
+      <input type="number" id="dailyPrice10" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
+      <span class="unit">ብር/ግራም</span>
+    </div>
+  </div>
+
+  <div class="price-card">
+    <label>ኮምሽን መእተዊ ብግራም (Entry Commission per gram — 90% ጥራይ)</label>
+    <div class="price-input-row">
+      <input type="number" id="entryCommissionRate" inputmode="decimal" step="any" placeholder="0.00" oninput="updateResults()">
+      <span class="unit">ብር/ግራም</span>
+    </div>
+  </div>
+
+  <div id="rowsContainer"></div>
+
+  <button class="add-row-btn" onclick="addRow()">+ ተወሳኺ ሓድሽ ረድፍ ወስኽ (Add Row)</button>
+
+  <div class="total-card" id="grandTotalCard" style="border-color:var(--gold);">
+    <h3 style="color:#f2ede1;">ጠቕላላ ድምር (90% + 10% ብሓንሳብ)</h3>
+    <div id="grandTotalsBody"></div>
+  </div>
+
+  <div class="total-card">
+    <h3 id="totalTitle">ድምር (Totals) — 90%</h3>
+    <div id="totalsBody"></div>
+  </div>
+
+  <button class="clear-btn" onclick="clearAll()">ኩሉ ደምስስ (Clear All)</button>
+
+  <p class="info-note">
+    90%: ዋጋ = ክብደት × (ካራት/24) × ዕዳጋ90% × 90% ፣ ኮምሽን መእተዊ (ብተጠቃሚ ዝኣተወ ዋጋ × ክብደት) ካብ 90% ጥራይ ይቕነስ<br>
+    10%: 100% ዋጋ (ብዕዳጋ10%) ተሰሊዑ፣ ናይ 90% ዋጋ (ብዕዳጋ90%) ተቐኒሱ ተረፍ ትወጽእ — ኮምሽን መእተዊ ኣይትቕነስን<br>
+    ናይ ባንኪ ኮምሽን 0.1% ኣብ ክልቲኡ (90%ን 10%ን) ይሕሰብ
+  </p>
+
+</div>
+
+<script>
+let currentTab = '90';
+let rows = [
+  {weight:'', karat:''},
+  {weight:'', karat:''},
+  {weight:'', karat:''}
+];
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  renderRows();
+}
+
+function addRow(){
+  rows.push({weight:'', karat:''});
+  renderRows();
+}
+
+function removeRow(i){
+  rows.splice(i,1);
+  renderRows();
+}
+
+function clearAll(){
+  if(!confirm('ኩሉ ዳታ ክድምሰስ ድዩ? / Clear all data?')) return;
+  rows = [{weight:'', karat:''}];
+  document.getElementById('dailyPrice90').value = '';
+  document.getElementById('dailyPrice10').value = '';
+  document.getElementById('entryCommissionRate').value = '';
+  renderRows();
+}
+
+function fmt(n){
+  if(!isFinite(n)) n = 0;
+  return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+// 90% sheet: value90 = weight * (karat/24) * price90 * 90%
+// entry commission = user-entered rate * weight (applies ONLY here, never on the 10% sheet)
+// bank commission = 0.1% of value90 (fixed, matches original workbook)
+// VAT: removed per request — no longer subtracted anywhere
+function compute90(weight, karat, price, commissionRate){
+  const w = parseFloat(weight)||0;
+  const k = parseFloat(karat)||0;
+  const p = parseFloat(price)||0;
+  const cr = parseFloat(commissionRate)||0;
+  const value90 = w * (k/24) * p * 0.90;      // E = B*(C/24)*D*90%
+  const entryCommission = cr * w;             // F = (user rate) * B
+  const bankCommission = value90 * 0.001;     // G = E*0.1% (fixed)
+  const net = value90 - entryCommission - bankCommission; // I (no VAT)
+  return {value90, entryCommission, bankCommission, net};
+}
+
+// 10% sheet: uses its OWN daily price (price10), while pulling the 90% value
+// using the 90% sheet's own price (price90) — these two prices can differ.
+// No entry commission here, ever — matches the original workbook.
+function compute10(weight, karat, price10, price90){
+  // If the 10% sheet's own daily price hasn't been entered yet, don't compute
+  // anything from the (still-zero) price — that would wrongly subtract the
+  // 90% value and show a negative number. Show all zeros instead until filled.
+  if(price10 === '' || price10 === null || price10 === undefined){
+    return {value100:0, remainder:0, bankCommission:0, net:0};
+  }
+  const w = parseFloat(weight)||0;
+  const k = parseFloat(karat)||0;
+  const p10 = parseFloat(price10)||0;
+  const p90 = parseFloat(price90)||0;
+  const value100 = (k/24) * w * p10;          // E = (C/24)*B*D10
+  const value90 = w * (k/24) * p90 * 0.90;    // F = 90%!E
+  const remainder = value100 - value90;       // E - F  (the 10% slice)
+  const bankCommission = remainder * 0.001;   // G = (E-F)*0.1% (fixed)
+  const net = remainder - bankCommission;     // I (no VAT, no entry commission)
+  return {value100, remainder, bankCommission, net};
+}
+
+// Builds the row cards (inputs + empty result slots). Only called when rows
+// are added/removed/cleared or the tab changes — never on every keystroke —
+// so the input elements are never destroyed while the user is typing in them.
+function renderRows(){
+  const container = document.getElementById('rowsContainer');
+  container.innerHTML = '';
+
+  rows.forEach((r, i)=>{
+    const card = document.createElement('div');
+    card.className = 'row-card';
+    card.innerHTML = `
+      <div class="row-top">
+        <span class="row-index">ረድፍ ${i+1}</span>
+        <button class="row-remove" type="button">✕</button>
+      </div>
+      <div class="inputs-grid">
+        <div class="field">
+          <label>ክብደት ብግራም (Weight, g)</label>
+          <input type="number" inputmode="decimal" step="any" value="${r.weight}" placeholder="0" class="weight-input">
+        </div>
+        <div class="field">
+          <label>ካራት (Karat)</label>
+          <input type="number" inputmode="decimal" step="any" value="${r.karat}" placeholder="24" class="karat-input">
+        </div>
+      </div>
+      <div class="results" id="results-${i}"></div>
+    `;
+    const weightInput = card.querySelector('.weight-input');
+    const karatInput = card.querySelector('.karat-input');
+    weightInput.addEventListener('input', ()=>{ rows[i].weight = weightInput.value; updateResults(); });
+    karatInput.addEventListener('input', ()=>{ rows[i].karat = karatInput.value; updateResults(); });
+    card.querySelector('.row-remove').addEventListener('click', ()=> removeRow(i));
+    container.appendChild(card);
+  });
+
+  updateResults();
+}
+
+// Recomputes and writes only the calculated numbers (per-row results +
+// totals + grand total). Never touches the weight/karat/price/commission
+// input elements, so the user's cursor and focus stay put while typing.
+function updateResults(){
+  const price90 = document.getElementById('dailyPrice90').value;
+  const price10 = document.getElementById('dailyPrice10').value;
+  const commissionRate = document.getElementById('entryCommissionRate').value;
+
+  let totals = {main:0, sub:0, bankCommission:0, net:0};
+
+  rows.forEach((r, i)=>{
+    const resultsEl = document.getElementById(`results-${i}`);
+    if(!resultsEl) return;
+
+    if(currentTab === '90'){
+      const c = compute90(r.weight, r.karat, price90, commissionRate);
+      totals.main += c.value90;
+      totals.sub += c.entryCommission;
+      totals.bankCommission += c.bankCommission;
+      totals.net += c.net;
+      resultsEl.innerHTML = `
+        <div class="result-item"><span>90% ዋጋ</span><span>${fmt(c.value90)}</span></div>
+        <div class="result-item"><span>ኮምሽን መእተዊ</span><span>${fmt(c.entryCommission)}</span></div>
+        <div class="result-item"><span>0.1% ባንኪ ኮምሽን</span><span>${fmt(c.bankCommission)}</span></div>
+        <div class="final-value"><span>ዝተፃረየ ዋጋ</span><span>${fmt(c.net)}</span></div>
+      `;
+    } else {
+      const c = compute10(r.weight, r.karat, price10, price90);
+      totals.main += c.value100;
+      totals.sub += c.remainder;
+      totals.bankCommission += c.bankCommission;
+      totals.net += c.net;
+      resultsEl.innerHTML = `
+        <div class="result-item"><span>100% ዋጋ</span><span>${fmt(c.value100)}</span></div>
+        <div class="result-item"><span>10% ተረፍ</span><span>${fmt(c.remainder)}</span></div>
+        <div class="result-item"><span>0.1% ባንኪ ኮምሽን</span><span>${fmt(c.bankCommission)}</span></div>
+        <div class="final-value"><span>ዝተፃረየ ዋጋ</span><span>${fmt(c.net)}</span></div>
+      `;
+    }
+  });
+
+  // Grand total: combine 90% net + 10% net for every row, regardless of active tab.
+  // Entry commission is only ever charged once (inside the 90% calc), so no double-subtraction.
+  let grand90 = 0, grand10 = 0, grandEntryCommission = 0, grandBankCommission = 0;
+  rows.forEach(r=>{
+    const c90 = compute90(r.weight, r.karat, price90, commissionRate);
+    const c10 = compute10(r.weight, r.karat, price10, price90);
+    grand90 += c90.net;
+    grand10 += c10.net;
+    grandEntryCommission += c90.entryCommission;
+    grandBankCommission += c90.bankCommission + c10.bankCommission;
+  });
+  const grandNet = grand90 + grand10;
+  document.getElementById('grandTotalsBody').innerHTML = `
+    <div class="total-row"><span>ዝተፃረየ ዋጋ (90%)</span><span>${fmt(grand90)}</span></div>
+    <div class="total-row"><span>ዝተፃረየ ዋጋ (10%)</span><span>${fmt(grand10)}</span></div>
+    <div class="total-row"><span>ጠቕላላ ኮምሽን መእተዊ ዝተቐነሰ</span><span>${fmt(grandEntryCommission)}</span></div>
+    <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1% ዝተቐነሰ</span><span>${fmt(grandBankCommission)}</span></div>
+    <div class="total-row grand"><span>ጠቕላላ ናይ ክፍሊት ዋጋ</span><span>${fmt(grandNet)}</span></div>
+  `;
+
+  document.getElementById('totalTitle').textContent = `ድምር (Totals) — ${currentTab}%`;
+  const tb = document.getElementById('totalsBody');
+  if(currentTab === '90'){
+    tb.innerHTML = `
+      <div class="total-row"><span>ጠቕላላ 90% ዋጋ</span><span>${fmt(totals.main)}</span></div>
+      <div class="total-row"><span>ጠቕላላ ኮምሽን መእተዊ</span><span>${fmt(totals.sub)}</span></div>
+      <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1%</span><span>${fmt(totals.bankCommission)}</span></div>
+      <div class="total-row grand"><span>ጠቕላላ ዝተፃረየ ዋጋ</span><span>${fmt(totals.net)}</span></div>
+    `;
+  } else {
+    tb.innerHTML = `
+      <div class="total-row"><span>ጠቕላላ 100% ዋጋ</span><span>${fmt(totals.main)}</span></div>
+      <div class="total-row"><span>ጠቕላላ 10% ተረፍ</span><span>${fmt(totals.sub)}</span></div>
+      <div class="total-row"><span>ጠቕላላ ናይ ባንኪ ኮምሽን 0.1%</span><span>${fmt(totals.bankCommission)}</span></div>
+      <div class="total-row grand"><span>ጠቕላላ ዝተፃረየ ዋጋ</span><span>${fmt(totals.net)}</span></div>
+    `;
+  }
+}
+
+renderRows();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
